@@ -19,8 +19,13 @@ public class Lobby extends JFrame implements ActionListener {
     private JPanel buttonPanel;
     private JButton iniButton;
     private JButton startButton;
+    private JDialog waitingDialog;
+    private JLabel waitingLabel;
 
     private int moveCount;
+    private boolean waiting;
+
+    private boolean cheating=false;
 
     public Lobby(){
         setLayout(new BorderLayout());
@@ -45,6 +50,12 @@ public class Lobby extends JFrame implements ActionListener {
         iniButton.addActionListener(this);
         startButton.addActionListener(this);
 
+        waitingDialog = new JDialog();
+        waitingLabel = new JLabel();
+        waitingLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        waitingDialog.setLayout(new GridLayout(1,1));
+        waitingDialog.add(waitingLabel);
+
         refreshFont();
 
         this.setVisible(true);
@@ -57,12 +68,34 @@ public class Lobby extends JFrame implements ActionListener {
             }
         });
     }
+    public ScoreBoard getScoreBoard(){
+        return scoreBoard;
+    }
     public void refreshFont() {
         int fontSize = Math.min(getWidth(), getHeight())/40;
         iniButton.setFont(new Font("Microsoft Yahei", Font.BOLD, fontSize));
         startButton.setFont(new Font("Microsoft Yahei", Font.BOLD, fontSize));
     }
+    public int getMoveCount(){
+        return moveCount;
+    }
+    public void waitStart(){
+        waiting=true;
+        waitingLabel.setText(String.format("YOU WIN! With A MoveCount Of %s!\nBUT WAITTING FOR THE SCORE CALCULATION...", moveCount));
+        waitingLabel.setFont(new Font("Microsoft Yahei", Font.BOLD, Math.min(getWidth(), getHeight())/25));
+        waitingDialog.setSize(getWidth(),getHeight()*2/9);
+        waitingDialog.setLocationRelativeTo(this);
+        waitingDialog.setVisible(true);
+    }
+    public void waitEnd(){
+        waiting=false;
+        waitingDialog.setVisible(false);
+    }
+    public boolean isWaiting(){
+        return waiting;
+    }
     public void gameStart(){
+        waiting=false;
         moveCount=0;
         startButton.setEnabled(false);
         gamePanel.gameStart();
@@ -72,8 +105,13 @@ public class Lobby extends JFrame implements ActionListener {
     public void move(){
         moveCount++;
         setTitle(String.format("%s||MoveCount:%s", title,moveCount));
+        if(cheating){
+            scoreBoard.getTextArea().setSelectionStart(0);
+            scoreBoard.getTextArea().setSelectionEnd(moveCount*2);
+        }
     }
     public void gameOver(boolean isWin){
+        cheating=false;
         if(isWin)scoreBoard.win(moveCount);
         iniButton.setText(iniText);
         setTitle(title);
@@ -81,6 +119,7 @@ public class Lobby extends JFrame implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource()==iniButton){
+            scoreBoard.getCheat().setText(null);
             gamePanel.gameOver(false);
             gamePanel.initialize();
             gamePanel.display();
@@ -93,5 +132,8 @@ public class Lobby extends JFrame implements ActionListener {
         if(e.getSource()==startButton){
             gameStart();
         }
+    }
+    public void cheatStart() {
+        cheating=true;
     }
 }

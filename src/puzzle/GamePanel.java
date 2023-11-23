@@ -14,6 +14,8 @@ public class GamePanel extends JPanel implements ActionListener{
     private List<JButton> buttons;
     private List<Integer> panelData;
     private Lobby parent;
+    private PuzzleCalculator pu;
+    private Thread thread;
     private static final Color block = new Color(240, 240, 240);
     public GamePanel(Lobby lobby){
         parent=lobby;
@@ -47,10 +49,10 @@ public class GamePanel extends JPanel implements ActionListener{
         int air = ran.nextInt(n*n);
         panelData.add(air, 0);
     }
-    public boolean isSolvable(){//判断当前是否有解
-        int size=panelData.size();
+    public boolean isSolvable(){//判断当前是否有解，n行m列
+        int size=panelData.size();//panelData存放当前十六个格子显示的数字
         int inv=0;
-        for(int i=0;i<size;i++){//inv
+        for(int i=0;i<size;i++){//求除了0之外所有数的逆序数
             int xi=panelData.get(i);
             if(xi==0)continue;
             for(int j=i+1;j<size;j++){
@@ -59,7 +61,7 @@ public class GamePanel extends JPanel implements ActionListener{
                 if(xi>xj)inv++;
             }
         }
-        if(((m-1)%2==0)||(inv%2==(n-panelData.indexOf(0)/m+1)%2)){
+        if(((m-1)%2==0)||(inv%2==(n-panelData.indexOf(0)/m+1)%2)){//有解的充要条件
             return true;
         }else{
             return false;
@@ -96,6 +98,23 @@ public class GamePanel extends JPanel implements ActionListener{
         if(isWin())gameOver(true);
     }
     public void gameStart(){
+        pu = new PuzzleCalculator(panelData.stream().mapToInt(Integer::valueOf).toArray(),parent);    
+        parent.getScoreBoard().setRecord(-1);
+        try{
+            thread.stop();
+        }catch(Exception e){}
+        thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                parent.getScoreBoard().setRecord(pu.solve());
+                parent.getScoreBoard().getTitle().setForeground(Color.GRAY);
+                if(parent.isWaiting()){
+                    parent.waitEnd();
+                    gameOver(true);
+                }
+            }
+        });
+        thread.start();
         for(JButton button:buttons){
             if(button.getText()=="")continue;
             button.setEnabled(true);

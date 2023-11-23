@@ -1,11 +1,10 @@
 package puzzle;
 
-import java.awt.BorderLayout;
-import java.awt.Font;
-import java.awt.GridLayout;
+import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
 
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -23,6 +22,7 @@ public class ScoreBoard extends JPanel {
     private Lobby parent;
     private JDialog winDialog;
     private JLabel winLabel;
+    private Cheat cheat;
     public ScoreBoard(Lobby lobby){
         parent = lobby;
         setLayout(new BorderLayout());
@@ -30,6 +30,7 @@ public class ScoreBoard extends JPanel {
         this.add(title,BorderLayout.NORTH);
         records = new JTextArea();
         records.setEditable(false);
+        records.setLineWrap(true);
         pane = new JScrollPane(records);
         pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
@@ -41,26 +42,35 @@ public class ScoreBoard extends JPanel {
         winDialog.setLayout(new GridLayout(1,1));
         winDialog.add(winLabel);
 
+        cheat=new Cheat(this);
 
+        records.addMouseListener(cheat);
         recordList=new ArrayList<>();
         refreshFont();
     }
-
+    public JTextArea getTextArea(){
+        return records;
+    }
+    public Lobby getPar(){
+        return parent;
+    }
     public void refreshFont() {
-        int fontSize = Math.min(parent.getWidth(), parent.getHeight())/45;
+        int fontSize = Math.min(parent.getWidth(), parent.getHeight())/30;
         title.setFont(new Font("Microsoft Yahei", Font.BOLD, fontSize));
         records.setFont(new Font("Microsoft Yahei", Font.BOLD, fontSize));
     }
+    public Cheat getCheat(){
+        return cheat;
+    }
 
     public void win(int moveCount) {
-        if(recordList.size()==0){
-            recordAdd(100.0);
-            minMoveCount=moveCount;
-        }else{
-            recordAdd(minMoveCount*100.0/moveCount);
-            if(moveCount<minMoveCount)minMoveCount=moveCount;
-            System.out.println(String.format("%s %s %s", minMoveCount,moveCount,(int)(minMoveCount*100.0/moveCount)));
+        
+        if(minMoveCount==-1){
+            parent.waitStart();
+            return;
         }
+        recordAdd(minMoveCount*100.0/moveCount);
+        
         winLabel.setText(String.format("YOU WIN! With A MoveCount Of %s!", moveCount));
         winLabel.setFont(new Font("Microsoft Yahei", Font.BOLD, Math.min(parent.getWidth(), parent.getHeight())/20));
         winDialog.setSize(parent.getWidth(),parent.getHeight()*2/9);
@@ -68,16 +78,27 @@ public class ScoreBoard extends JPanel {
         winDialog.setVisible(true);
     }
     public void recordAdd(Double score){
-        recordList.add(score);
-        //recordList.sort();
+        int i=0;
+        for(i=0;i<recordList.size();i++){
+            if(score>recordList.get(i))break;
+        }
+        recordList.add(i,score);
         display();
     }
     public void display(){
+        title.setForeground(Color.BLACK);
         int size = recordList.size();
         String[] strs = new String[size];
         for(int i=0;i<size;i++){
             strs[i]=String.format("%.4f",recordList.get(i));
         }
         records.setText(String.join("\n",strs));
+    }
+
+    public void setRecord(int solve) {
+        minMoveCount=solve;
+    }
+    public JLabel getTitle() {
+        return title;
     }
 }
